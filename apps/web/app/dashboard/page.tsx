@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SignOutButton from './signout-button'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -9,11 +10,22 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login')
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-3xl font-bold mb-2">Welcome to VolleyHub</h1>
-        <p className="text-gray-500">Signed in as <strong>{user.email}</strong></p>
+    <main className="max-w-3xl mx-auto p-8">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">VolleyHub</h1>
         <SignOutButton />
+      </div>
+
+      <p className="text-gray-500 mb-8">Welcome, {user.email}</p>
+
+      <div className="flex flex-col gap-4">
+        <Link
+          href="/teams"
+          className="border border-gray-200 rounded-xl p-6 hover:border-black transition-colors"
+        >
+          <h2 className="text-xl font-bold">My Teams</h2>
+          <p className="text-gray-500 text-sm mt-1">Manage your rosters and rotation plans</p>
+        </Link>
       </div>
     </main>
   )
