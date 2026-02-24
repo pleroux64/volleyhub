@@ -23,6 +23,12 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
     .eq('team_id', id)
     .order('jersey_number', { ascending: true })
 
+  const { data: rotationPlans } = await supabase
+    .from('rotation_plans')
+    .select('*')
+    .eq('team_id', id)
+    .order('created_at', { ascending: false })
+
   return (
     <main className="max-w-3xl mx-auto p-8">
       <div className="mb-8">
@@ -84,6 +90,42 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
           <p className="text-sm mt-2">Add your first player to build the roster</p>
         </div>
       )}
+
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Rotation Plans</h2>
+          <Link
+            href={`/teams/${id}/rotations/new`}
+            className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800"
+          >
+            New Plan
+          </Link>
+        </div>
+
+        {rotationPlans && rotationPlans.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {rotationPlans.map(plan => (
+              <Link
+                key={plan.id}
+                href={`/teams/${id}/rotations/${plan.id}`}
+                className="border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:border-black transition-colors"
+              >
+                <div>
+                  <p className="font-medium">{plan.name}</p>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {plan.is_published ? 'Published' : 'Draft'}
+                  </p>
+                </div>
+                <span className="text-gray-400 text-sm">→</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 text-gray-400">
+            <p>No rotation plans yet</p>
+          </div>
+        )}
+      </div>
     </main>
   )
 }
