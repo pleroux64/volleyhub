@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import NavHeader from '@/components/NavHeader'
 
 type Player = {
   id: string
@@ -25,6 +26,8 @@ const POSITION_LABELS: { [key: string]: string } = {
   P5: 'P5 — Back Left',
   P6: 'P6 — Back Center',
 }
+
+const inputClass = 'w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500'
 
 export default function NewRotationPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: teamId } = use(params)
@@ -114,159 +117,174 @@ export default function NewRotationPlanPage({ params }: { params: Promise<{ id: 
 
   if (fetching) {
     return (
-      <main className="max-w-2xl mx-auto p-8">
-        <p className="text-gray-500">Loading roster...</p>
-      </main>
+      <>
+        <NavHeader />
+        <main className="max-w-2xl mx-auto px-6 py-10">
+          <p className="text-slate-400 text-sm">Loading roster...</p>
+        </main>
+      </>
     )
   }
 
   if (players.length < 6) {
     return (
-      <main className="max-w-2xl mx-auto p-8">
-        <Link href={`/teams/${teamId}`} className="text-sm text-gray-500 hover:text-black">
-          ← Back to team
-        </Link>
-        <h1 className="text-3xl font-bold mt-4 mb-4">New Rotation Plan</h1>
-        <div className="border border-red-200 rounded-xl p-6 bg-red-50">
-          <p className="text-red-600 font-medium">Not enough players</p>
-          <p className="text-red-500 text-sm mt-1">
-            You need at least 6 players on your roster to create a rotation plan.
-            You currently have {players.length}.
-          </p>
+      <>
+        <NavHeader />
+        <main className="max-w-2xl mx-auto px-6 py-10">
           <Link
-            href={`/teams/${teamId}/players/new`}
-            className="inline-block mt-4 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"
+            href={`/teams/${teamId}`}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 mb-4 transition-colors"
           >
-            Add Players
+            ← Back to team
           </Link>
-        </div>
-      </main>
+          <h1 className="text-2xl font-semibold text-slate-900 mt-4 mb-4">New Rotation Plan</h1>
+          <div className="border border-red-200 rounded-xl p-6 bg-red-50">
+            <p className="text-red-600 font-medium">Not enough players</p>
+            <p className="text-red-500 text-sm mt-1">
+              You need at least 6 players on your roster to create a rotation plan.
+              You currently have {players.length}.
+            </p>
+            <Link
+              href={`/teams/${teamId}/players/new`}
+              className="inline-block mt-4 bg-cyan-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-cyan-700"
+            >
+              Add Players
+            </Link>
+          </div>
+        </main>
+      </>
     )
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-8">
-      <div className="mb-8">
-        <Link href={`/teams/${teamId}`} className="text-sm text-gray-500 hover:text-black">
-          ← Back to team
-        </Link>
-        <h1 className="text-3xl font-bold mt-4">New Rotation Plan</h1>
-      </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-        {/* Plan details */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Plan Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-              placeholder="e.g. Base Rotation, Rotation vs Tall Blockers"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Optional notes about this rotation plan"
-              rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black resize-none"
-            />
-          </div>
+    <>
+      <NavHeader />
+      <main className="max-w-2xl mx-auto px-6 py-10">
+        <div className="mb-8">
+          <Link
+            href={`/teams/${teamId}`}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 mb-4 transition-colors"
+          >
+            ← Back to team
+          </Link>
+          <h1 className="text-2xl font-semibold text-slate-900 mt-4">New Rotation Plan</h1>
         </div>
 
-        {/* Starting lineup */}
-        <div>
-          <h2 className="text-lg font-bold mb-1">Starting Lineup</h2>
-          <p className="text-gray-500 text-sm mb-4">
-            Assign players to their starting rotation positions.
-            P1 is back-right (server), front row is P2-P4, back row is P1, P5-P6.
-          </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+          {/* Plan details */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Plan Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                placeholder="e.g. Base Rotation, Rotation vs Tall Blockers"
+                className={inputClass}
+              />
+            </div>
 
-          {/* Court diagram hint */}
-          <div className="border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50">
-            <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-400 mb-2">
-              <span>P4 (FL)</span>
-              <span>P3 (FC)</span>
-              <span>P2 (FR)</span>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Optional notes about this rotation plan"
+                rows={2}
+                className={`${inputClass} resize-none`}
+              />
             </div>
-            <div className="border-t border-dashed border-gray-300 my-2" />
-            <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-400">
-              <span>P5 (BL)</span>
-              <span>P6 (BC)</span>
-              <span>P1 (BR)</span>
-            </div>
-            <p className="text-center text-xs text-gray-400 mt-2">↑ Net</p>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {POSITIONS.map(pos => (
-              <div key={pos} className="flex items-center gap-3">
-                <div className="w-40 text-sm font-medium text-gray-700">
-                  {POSITION_LABELS[pos]}
-                </div>
-                <div className="flex-1 flex items-center gap-2">
-                  <select
-                    value={lineup[pos]?.playerId || ''}
-                    onChange={e => {
-                      if (e.target.value === '') {
-                        clearPosition(pos)
-                      } else {
-                        assignPlayer(pos, e.target.value)
-                      }
-                    }}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="">Select player</option>
-                    {players.map(player => {
-                      const isAssigned = getAssignedPlayerIds().includes(player.id)
-                      const isThisPosition = lineup[pos]?.playerId === player.id
-                      return (
-                        <option
-                          key={player.id}
-                          value={player.id}
-                          disabled={isAssigned && !isThisPosition}
-                        >
-                          {player.jersey_number ? `#${player.jersey_number} ` : ''}
-                          {player.name}
-                          {player.position ? ` — ${player.position}` : ''}
-                          {isAssigned && !isThisPosition ? ' (assigned)' : ''}
-                        </option>
-                      )
-                    })}
-                  </select>
-                  {lineup[pos] && (
-                    <button
-                      type="button"
-                      onClick={() => clearPosition(pos)}
-                      className="text-gray-400 hover:text-black text-sm"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+          {/* Starting lineup */}
+          <div>
+            <h2 className="text-base font-semibold text-slate-800 mb-1">Starting Lineup</h2>
+            <p className="text-slate-400 text-sm mb-4">
+              Assign players to their starting rotation positions.
+              P1 is back-right (server), front row is P2-P4, back row is P1, P5-P6.
+            </p>
+
+            {/* Court diagram hint */}
+            <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-slate-50">
+              <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-400 mb-2">
+                <span>P4 (FL)</span>
+                <span>P3 (FC)</span>
+                <span>P2 (FR)</span>
               </div>
-            ))}
+              <div className="border-t border-dashed border-slate-200 my-2" />
+              <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-400">
+                <span>P5 (BL)</span>
+                <span>P6 (BC)</span>
+                <span>P1 (BR)</span>
+              </div>
+              <p className="text-center text-xs text-slate-400 mt-2">↑ Net</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {POSITIONS.map(pos => (
+                <div key={pos} className="flex items-center gap-3">
+                  <div className="w-40 text-sm font-medium text-slate-700">
+                    {POSITION_LABELS[pos]}
+                  </div>
+                  <div className="flex-1 flex items-center gap-2">
+                    <select
+                      value={lineup[pos]?.playerId || ''}
+                      onChange={e => {
+                        if (e.target.value === '') {
+                          clearPosition(pos)
+                        } else {
+                          assignPlayer(pos, e.target.value)
+                        }
+                      }}
+                      className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    >
+                      <option value="">Select player</option>
+                      {players.map(player => {
+                        const isAssigned = getAssignedPlayerIds().includes(player.id)
+                        const isThisPosition = lineup[pos]?.playerId === player.id
+                        return (
+                          <option
+                            key={player.id}
+                            value={player.id}
+                            disabled={isAssigned && !isThisPosition}
+                          >
+                            {player.jersey_number ? `#${player.jersey_number} ` : ''}
+                            {player.name}
+                            {player.position ? ` — ${player.position}` : ''}
+                            {isAssigned && !isThisPosition ? ' (assigned)' : ''}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    {lineup[pos] && (
+                      <button
+                        type="button"
+                        onClick={() => clearPosition(pos)}
+                        className="text-slate-400 hover:text-slate-700 text-sm"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-black text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
-        >
-          {loading ? 'Creating...' : 'Create Rotation Plan'}
-        </button>
-      </form>
-    </main>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-cyan-600 text-white rounded-xl px-4 py-2 text-sm font-medium hover:bg-cyan-700 disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Rotation Plan'}
+          </button>
+        </form>
+      </main>
+    </>
   )
 }

@@ -16,29 +16,27 @@ type Props = {
 }
 
 const ROTATIONS = [1, 2, 3, 4, 5, 6]
-const supabase = createClient()
+
+const DEFAULT_XY: { [key: string]: { x: number; y: number } } = {
+  P4: { x: 20, y: 25 },
+  P3: { x: 50, y: 25 },
+  P2: { x: 80, y: 25 },
+  P5: { x: 20, y: 75 },
+  P6: { x: 50, y: 75 },
+  P1: { x: 80, y: 75 },
+}
 
 function buildDefaultPositions(
   startingLineup: { [slot: string]: StartingLineupEntry },
   rotationNumber: number
 ): PlayerPosition[] {
-  const defaults: { [key: string]: { x: number; y: number } } = {
-    P4: { x: 20, y: 25 },
-    P3: { x: 50, y: 25 },
-    P2: { x: 80, y: 25 },
-    P5: { x: 20, y: 75 },
-    P6: { x: 50, y: 75 },
-    P1: { x: 80, y: 75 },
-  }
-
   const rotatedLineup = getRotationLineup(startingLineup, rotationNumber)
-
   return Object.entries(rotatedLineup).map(([slot, player]) => ({
     playerId: player.playerId,
     playerName: player.playerName,
     rotationSlot: slot,
-    x: defaults[slot]?.x ?? 50,
-    y: defaults[slot]?.y ?? 50,
+    x: DEFAULT_XY[slot]?.x ?? 50,
+    y: DEFAULT_XY[slot]?.y ?? 50,
   }))
 }
 
@@ -47,12 +45,10 @@ export default function CourtDiagramWrapper({ rotationPlanId, startingLineup }: 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
   const [serveResetKey, setServeResetKey] = useState(0)
   const [receiveResetKey, setReceiveResetKey] = useState(0)
-  const [loading, setLoading] = useState(true)
 
-  // Store positions for all rotations and both situations
-  // Key format: `${rotationNumber}-serve` or `${rotationNumber}-receive`
   const [allFormations, setAllFormations] = useState<{ [key: string]: PlayerPosition[] }>(() => {
     const initial: { [key: string]: PlayerPosition[] } = {}
     ROTATIONS.forEach(r => {
@@ -61,6 +57,8 @@ export default function CourtDiagramWrapper({ rotationPlanId, startingLineup }: 
     })
     return initial
   })
+
+  const supabase = createClient()
 
   useEffect(() => {
     async function loadFormations() {
@@ -79,10 +77,8 @@ export default function CourtDiagramWrapper({ rotationPlanId, startingLineup }: 
           return updated
         })
       }
-
       setLoading(false)
     }
-
     loadFormations()
   }, [rotationPlanId])
 
@@ -98,31 +94,22 @@ export default function CourtDiagramWrapper({ rotationPlanId, startingLineup }: 
     setSaved(false)
     setError('')
 
-    const servePositions = allFormations[`${activeRotation}-serve`]
-    const receivePositions = allFormations[`${activeRotation}-receive`]
-
-    console.log('Saving:', { rotationPlanId, activeRotation })
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('rotation_formations')
       .upsert([
         {
           rotation_plan_id: rotationPlanId,
           rotation_number: activeRotation,
           situation: 'serve',
-          positions: servePositions
+          positions: allFormations[`${activeRotation}-serve`]
         },
         {
           rotation_plan_id: rotationPlanId,
           rotation_number: activeRotation,
           situation: 'receive',
-          positions: receivePositions
+          positions: allFormations[`${activeRotation}-receive`]
         }
-      ], {
-        onConflict: 'rotation_plan_id,rotation_number,situation'
-      })
-
-    console.log('Result:', { data, error })
+      ], { onConflict: 'rotation_plan_id,rotation_number,situation' })
 
     if (error) {
       setError(error.message)
@@ -130,100 +117,112 @@ export default function CourtDiagramWrapper({ rotationPlanId, startingLineup }: 
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     }
-
     setSaving(false)
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-lg">Formation Editor</h3>
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Formation Editor</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Drag players to tactical positions</p>
+        </div>
         <button
           onClick={handleSave}
-          disabled={saving}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+          disabled={saving || loading}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            saved
+              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+              : 'bg-slate-900 text-white hover:bg-slate-700'
+          } disabled:opacity-40`}
         >
-          {saving ? 'Saving...' : saved ? '✓ Saved' : `Save Rotation ${activeRotation}`}
+          {saving ? 'Saving...' : saved ? '✓ Saved' : `Save R${activeRotation}`}
         </button>
       </div>
 
+      {/* Rotation tabs */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+        {ROTATIONS.map(r => (
+          <button
+            key={r}
+            onClick={() => setActiveRotation(r)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              activeRotation === r
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            R{r}
+          </button>
+        ))}
+      </div>
+
+      {/* Courts */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          <p>Loading formations...</p>
+        <div className="flex items-center justify-center py-16">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+            <p className="text-xs text-slate-400">Loading formations...</p>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Rotation tabs */}
-          <div className="flex gap-2">
-            {ROTATIONS.map(r => (
+        <div className="grid grid-cols-2 gap-8">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Serve</span>
               <button
-                key={r}
-                onClick={() => setActiveRotation(r)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  activeRotation === r
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-black'
-                }`}
+                onClick={() => {
+                  setAllFormations(prev => ({
+                    ...prev,
+                    [`${activeRotation}-serve`]: buildDefaultPositions(startingLineup, activeRotation),
+                  }))
+                  setServeResetKey(prev => prev + 1)
+                }}
+                className="text-xs text-slate-400 hover:text-slate-700"
               >
-                R{r}
+                Reset
               </button>
-            ))}
+            </div>
+            <CourtDiagram
+              key={`${activeRotation}-serve-${serveResetKey}`}
+              label=""
+              initialPositions={allFormations[`${activeRotation}-serve`]}
+              onChange={(positions) => handleChange(activeRotation, 'serve', positions)}
+            />
           </div>
 
-          {/* Two courts side by side */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-600">Serve</p>
-                <button
-                  onClick={() => {
-                    setAllFormations(prev => ({
-                      ...prev,
-                      [`${activeRotation}-serve`]: buildDefaultPositions(startingLineup, activeRotation),
-                    }))
-                    setServeResetKey(prev => prev + 1)
-                  }}
-                  className="text-xs text-gray-400 hover:text-black underline"
-                >
-                  Reset
-                </button>
-              </div>
-              <CourtDiagram
-                key={`${activeRotation}-serve-${serveResetKey}`}
-                label=""
-                initialPositions={allFormations[`${activeRotation}-serve`]}
-                onChange={(positions) => handleChange(activeRotation, 'serve', positions)}
-              />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Receive</span>
+              <button
+                onClick={() => {
+                  setAllFormations(prev => ({
+                    ...prev,
+                    [`${activeRotation}-receive`]: buildDefaultPositions(startingLineup, activeRotation),
+                  }))
+                  setReceiveResetKey(prev => prev + 1)
+                }}
+                className="text-xs text-slate-400 hover:text-slate-700"
+              >
+                Reset
+              </button>
             </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-600">Receive</p>
-                <button
-                  onClick={() => {
-                    setAllFormations(prev => ({
-                      ...prev,
-                      [`${activeRotation}-receive`]: buildDefaultPositions(startingLineup, activeRotation),
-                    }))
-                    setReceiveResetKey(prev => prev + 1)
-                  }}
-                  className="text-xs text-gray-400 hover:text-black underline"
-                >
-                  Reset
-                </button>
-              </div>
-              <CourtDiagram
-                key={`${activeRotation}-receive-${receiveResetKey}`}
-                label=""
-                initialPositions={allFormations[`${activeRotation}-receive`]}
-                onChange={(positions) => handleChange(activeRotation, 'receive', positions)}
-              />
-            </div>
+            <CourtDiagram
+              key={`${activeRotation}-receive-${receiveResetKey}`}
+              label=""
+              initialPositions={allFormations[`${activeRotation}-receive`]}
+              onChange={(positions) => handleChange(activeRotation, 'receive', positions)}
+            />
           </div>
-        </>
+        </div>
       )}
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
