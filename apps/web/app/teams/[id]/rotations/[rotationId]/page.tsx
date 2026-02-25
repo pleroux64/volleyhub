@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import CourtDiagramWrapper from './components/CourtDiagramWrapper'
 
 export default async function RotationPlanPage({
   params
@@ -110,10 +111,11 @@ export default async function RotationPlanPage({
         </div>
       </div>
 
-      {/* Placeholder for court diagram */}
-      <div className="mt-8 border-2 border-dashed border-gray-200 rounded-xl p-12 text-center text-gray-400">
-        <p className="text-lg font-medium">Court Diagram</p>
-        <p className="text-sm mt-1">Formation editor coming next</p>
+      <div className="mt-8">
+        <CourtDiagramWrapper
+          rotationPlanId={rotationId}
+          startingLineup={plan.starting_lineup}
+        />
       </div>
     </main>
   )
